@@ -1,0 +1,24 @@
+{
+  "name": "wellees",
+  "version": "1.0.0",
+  "description": "Beautiful graphs",
+  "main": "willys.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OptiGE/Wellees.git"
+  },
+  "author": "OptiGE",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/OptiGE/Wellees/issues"
+  },
+  "homepage": "https://github.com/OptiGE/Wellees#readme",
+  "dependencies": {
+    "pdf-parse": "^1.1.1",
+    "prompt": "^1.0.0",
+    "puppeteer": "^2.0.0"
+  }
+}

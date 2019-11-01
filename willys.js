@@ -37,7 +37,7 @@ prompt.get(theprompt, function (err, result) {
         return 1;
     }else {
         // Display user input in console log.
-        console.log("Loggar in på Willys.se med " + username + " som personnummer");
+        console.log("Loggar in på Willys.se med " + result.username + " som personnummer");
 		wellees(result.username, result.password);
     }
 });
@@ -91,6 +91,10 @@ function wellees(username, password){
 		});
 		*/
 
+		await page.goto("https://www.willys.se/mitt-konto/ordrar", {
+			waitUntil: 'networkidle0'
+		});
+		
 		
 
 		browser.close()
