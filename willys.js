@@ -1,8 +1,4 @@
 
- // `INSTAGRAM_USER=myuser INSTAGRAM_PWD=mypassword node instagram.js`
- //https://medium.com/@e_mad_ehsan/getting-started-with-puppeteer-and-chrome-headless-for-web-scrapping-6bf5979dee3e
- 
- 
  //---------------------------------------------------------------------------------
  //---------------------- U S E R    I N P U T -------------------------------------
  //---------------------------------------------------------------------------------
