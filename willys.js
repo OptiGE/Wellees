@@ -19,8 +19,6 @@ let dataBuffer = fs.readFileSync('examplereceipts/1.pdf');
 const puppeteer = require('puppeteer')
 const screenshot = 'instagram.png';
 
-
-
 var theprompt = [
 	{
         name: 'Press enter to start',
@@ -56,21 +54,26 @@ prompt.get(theprompt, function (err, result) {
  
  
  //-------------------------------------------------------------------------------------
+
  //----------------------------------- H E A D L E S S ---------------------------------
+
  //-------------------------------------------------------------------------------------
+
  
 function wellees(username, password){
 
 	(async () => {
 		const browser = await puppeteer.launch({
-			headless: false
-		})
+			headless: true,    
+            args: ['--no-sandbox'] //linux-chromium fix
+		});
+
 		
 		
 		// - - - - L O G I N - - - - - -
 		
 		const page = await browser.newPage()
-		/*
+
 		await page.goto("https://www.willys.se/anvandare/inloggning", {
 			waitUntil: 'networkidle0'
 		});
@@ -102,7 +105,6 @@ function wellees(username, password){
 		// DOWNLOAD RECEIPT AND READ IT INTO STRING TO BE SENT TO parseArticles
 		// let dataBuffer = fs.readFileSync('examplereceipts/1.pdf');
 		
-		*/
 		
 		// - - - - - P A R S E    R E C E I P T S - - - - - -
 		
@@ -131,25 +133,38 @@ function wellees(username, password){
 				waitUntil: 'networkidle2'
 			});
 			
-			//Pick out first alternative in list
-			await page.waitForSelector('#main-content > div.flex-noshrink > div:nth-child(3) > div > ax-product-grid > div > div.ax-grid-container.ax-grid-row-medium.ax-product-grid-content.layout-row.layout-wrap.layout-align-start.start');
-			//const webArticles = document.querySelectorAll("#main-content > div.flex-noshrink > div:nth-child(3) > div > ax-product-grid > div > div.ax-grid-container.ax-grid-row-medium.ax-product-grid-content.layout-row.layout-wrap.layout-align-start.start");
-			const webArticles = await page.evaluate(() => {
-			   return document.querySelector('#main-content > div.flex-noshrink > div:nth-child(3) > div > ax-product-grid > div > div.ax-grid-container.ax-grid-row-medium.ax-product-grid-content.layout-row.layout-wrap.layout-align-start.start');
-			});
-			
-			
-			console.log(webArticles);
-			
-			//  FORTSÄTT HÄR NÄSTA GÅNG. DU SKA TA UT FÖRSTA GREJEN UR WEBARTICLESS!!
-			//  KÖR FILEN SÅ SER DU VAD SOM HÄNDER
+            var gridSelector = "#main-content > div.flex-noshrink > div:nth-child(3) > div > ax-product-grid > div > div.ax-grid-container.ax-grid-row-medium.ax-product-grid-content.layout-row.layout-wrap.layout-align-start.start";
+            			
+            //#main-content > div.flex-noshrink > div:nth-child(3) > div > ax-product-grid > div > div.ax-grid-container.ax-grid-row-medium.ax-product-grid-content.layout-row.layout-wrap.layout-align-start.start > ax-product-puff:nth-child(2)
+
+            //Den sista siffran i den här bös-strängen representerar vilken cell i gridden det är. Dvs (1) är längst upp till vänster
+
+			//Wait for grid to load
+			await page.waitForSelector(gridSelector);
+
+            //Extract grid element
+			const webArticles = await page.evaluate((gridSelector) => {
+			   return document.querySelector(gridSelector).innerHTML;
+			}, gridSelector);
+               //Page.evaluate takes the funktion text and transfers it as LITERAL text into the chromium browser and executes it there, which is why it has to take gridSelector as an argument. Lot's of hours spent figuring that one out.			
+            
+
+
+            //Idag Tis 5:e November 2019 medans jag satt och skrev min kod gjorde Willys så att många
+            //termer från kvittot inte längre går att använda för att söka på deras hemsida. 
+
+            //Om man söker efter artikelnumret på deras sida, SOM MAN HITTAR PÅ DERAS SIDA, ger
+            // den fortfarande inte rätt sökresultat på rätt plats. Herre min skapare. 
+
+            //Att söka på artikelnumret för hushållsost ger blöjor som första sökträff
+            console.log("//////////////////////////////////////////////");
+            console.log("https://www.willys.se/sok?q=" + encodeURIComponent(articles[i][0]));
+            console.log(articles[i][0]);
+            console.log(webArticles);
+            console.log("))))))))))))))))))))))))))))))))))))))))))))))");
 			
 		}	
 			
-		
-		
-		
-		
 		
 		
 		
