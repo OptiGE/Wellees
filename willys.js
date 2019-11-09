@@ -1,7 +1,12 @@
 
- //---------------------------------------------------------------------------------
- //---------------------- U S E R    I N P U T -------------------------------------
- //---------------------------------------------------------------------------------
+//TODO, actually utilize the async!!
+//TODO, Implement using google Sankey because it's a lot prettier!
+ 
+ 
+ 
+ //--------------------------------------------------------------------------------------------------------
+ //---------------------- V A R I A B L E    D E C L A R A T I O N S  -------------------------------------
+ //--------------------------------------------------------------------------------------------------------
  
  
  // Importera prompt. Smidigt sätt att ta user input
@@ -18,6 +23,16 @@ let dataBuffer = fs.readFileSync('examplereceipts/1.pdf');
 //Puppeteer
 const puppeteer = require('puppeteer')
 const screenshot = 'instagram.png';
+
+
+
+
+
+
+ //---------------------------------------------------------------------------------
+ //---------------------- U S E R    I N P U T -------------------------------------
+ //---------------------------------------------------------------------------------
+
 
 var theprompt = [
 	{
@@ -54,11 +69,9 @@ prompt.get(theprompt, function (err, result) {
  
  
  //-------------------------------------------------------------------------------------
-
  //----------------------------------- H E A D L E S S ---------------------------------
-
  //-------------------------------------------------------------------------------------
-
+ 
  
 function wellees(username, password){
 
@@ -73,7 +86,7 @@ function wellees(username, password){
 		// - - - - L O G I N - - - - - -
 		
 		const page = await browser.newPage()
-
+/*
 		await page.goto("https://www.willys.se/anvandare/inloggning", {
 			waitUntil: 'networkidle0'
 		});
@@ -81,11 +94,11 @@ function wellees(username, password){
 		//Personnummer
 		await page.waitForSelector("[name='loginSsn']");
 		await page.click("[name='loginSsn']");
-		await page.type("[name='loginSsn']", username);
+		await page.type("[name='loginSsn']", "username");
 
 		//password
 		await page.keyboard.down("Tab");
-		await page.keyboard.type(password);
+		await page.keyboard.type("password");
 
 		//loginknappen
 		await page.keyboard.down("Tab"); //Det ligger en låda emellan
@@ -104,7 +117,7 @@ function wellees(username, password){
 		// ACTUALLY NAVIGATE TO RECEIPTS
 		// DOWNLOAD RECEIPT AND READ IT INTO STRING TO BE SENT TO parseArticles
 		// let dataBuffer = fs.readFileSync('examplereceipts/1.pdf');
-		
+		*/
 		
 		// - - - - - P A R S E    R E C E I P T S - - - - - -
 		
@@ -118,7 +131,7 @@ function wellees(username, password){
 		
 		
 		//Parse receipt to list of articles and their prices
-		articles = parseArticles(receiptString);
+		var articles = await parseArticles(receiptString); //Articles have structure: [[Article, Price], ...] where article and price are strings
 		
 		
 		
@@ -127,47 +140,50 @@ function wellees(username, password){
 		
 		//Search for and add the articles respective categories and subcategories
 		for (var i = 0; i < articles.length; i++){
-	
-			//Search for item number i
-			await page.goto("https://www.willys.se/sok?q=" + encodeURIComponent(articles[i][0]), {
-				waitUntil: 'networkidle2'
-			});
-			
-            var gridSelector = "#main-content > div.flex-noshrink > div:nth-child(3) > div > ax-product-grid > div > div.ax-grid-container.ax-grid-row-medium.ax-product-grid-content.layout-row.layout-wrap.layout-align-start.start";
-            			
-            //#main-content > div.flex-noshrink > div:nth-child(3) > div > ax-product-grid > div > div.ax-grid-container.ax-grid-row-medium.ax-product-grid-content.layout-row.layout-wrap.layout-align-start.start > ax-product-puff:nth-child(2)
+				console.log("");
+				console.log("0");
+				//Search for item number i
+				await page.goto("https://www.willys.se/sok?q=" + encodeURIComponent(articles[i][0]), {
+					waitUntil: 'networkidle2' //Borde kunna snabbas upp med await page.waitForSelector("gridSelector");
+				});						   
+			   
+				//Extract grid of articles
+				var gridSelector = "#main-content > div.flex-noshrink > div:nth-child(3) > div > ax-product-grid > div > div.ax-grid-container.ax-grid-row-medium.ax-product-grid-content.layout-row.layout-wrap.layout-align-start.start";	
 
-            //Den sista siffran i den här bös-strängen representerar vilken cell i gridden det är. Dvs (1) är längst upp till vänster
+				await page.waitForSelector(gridSelector);
+				const grid = await page.evaluate((gridSelector) => {
+				   return document.querySelector(gridSelector).innerHTML;
+				}, gridSelector);  
 
-			//Wait for grid to load
-			await page.waitForSelector(gridSelector);
+				//Skip if search yielded no results, and add "uncertain" as category of object
+				if(grid == "<!----><!---->"){
+					articles[i].push(["uncertain category"]);
+					continue;
+				}
 
-            //Extract grid element
-			const webArticles = await page.evaluate((gridSelector) => {
-			   return document.querySelector(gridSelector).innerHTML;
-			}, gridSelector);
-               //Page.evaluate takes the funktion text and transfers it as LITERAL text into the chromium browser and executes it there, which is why it has to take gridSelector as an argument. Lot's of hours spent figuring that one out.			
-            
+				//Click the first article in grid (should be iterable in future)
+				var firstArticle = "#main-content > div.flex-noshrink > div:nth-child(3) > div > ax-product-grid > div > div.ax-grid-container.ax-grid-row-medium.ax-product-grid-content.layout-row.layout-wrap.layout-align-start.start > ax-product-puff:nth-child(1) > div > div.ax-product-puff-head > div";
+				await page.click(firstArticle);
 
+				//Wait for product page to load and extract categories
+				await page.waitForSelector("#selenium--product-detail-dialog > md-dialog-content > div.md-dialog-content > p > small:nth-child(4) > a");
+				const categories = await page.evaluate(
+				  () => Array.from(
+					document.querySelectorAll('#selenium--product-detail-dialog > md-dialog-content > div.md-dialog-content > p > small:nth-child(4) > a'),
+					a => a.getAttribute('href')
+				  )
+				);
 
-            //Idag Tis 5:e November 2019 medans jag satt och skrev min kod gjorde Willys så att många
-            //termer från kvittot inte längre går att använda för att söka på deras hemsida. 
-
-            //Om man söker efter artikelnumret på deras sida, SOM MAN HITTAR PÅ DERAS SIDA, ger
-            // den fortfarande inte rätt sökresultat på rätt plats. Herre min skapare. 
-
-            //Att söka på artikelnumret för hushållsost ger blöjor som första sökträff
-            console.log("//////////////////////////////////////////////");
-            console.log("https://www.willys.se/sok?q=" + encodeURIComponent(articles[i][0]));
-            console.log(articles[i][0]);
-            console.log(webArticles);
-            console.log("))))))))))))))))))))))))))))))))))))))))))))))");
+				//Now categories are found. Transform them from urlstring to an array and append it to the proper article
+				articles[i].push(decodeURIComponent(categories).split("/").splice(2)); //Also remove first two elements as they always are "" and "sortiment"
 			
 		}	
-			
 		
+		//Article categories found, now do stuff with them
+		articles.forEach((element) => console.log(element));
 		
-		
+		sankeyString = sankeyGenString(articles);
+		console.log(sankeyString);
 		
 		
 		browser.close()
@@ -181,22 +197,30 @@ function wellees(username, password){
 // --------------- R E C E I P T   P A R S I N G -------------------------
 // -----------------------------------------------------------------------
 
+//Input: entry, value, exit. Output: Inputs parsed for sankeymatic.com
+function sankeyLine(entry, value, exit){
+	return entry + " [" + value.replace(",", ".") + "] " + exit + "\n";  
+}
 
-function sankeyGenString(){
-	//Ska få olika levels av olika grejer
-	//Oedning på stringsen spelar ingen roll, så länge nivåerna är rätt
+//Input: array of article, price and subcategories. Output: string to paste at sankeymatic.com
+function sankeyGenString(articles){
+	var returnString = "";
+	
+	articles.forEach(function (article){
+		returnString += sankeyLine("Totalt", article[1], "Budget");
+		returnString += sankeyLine("Budget", article[1], article[2][0]);
+		for (var i = 0; i < article[2].length - 1; i ++){
+			returnString += sankeyLine(article[2][i], article[1], article[2][i + 1]);
+		}
+		returnString += sankeyLine(article[2].slice(-1)[0], article[1], article[0]); 
+	});
+	
+	return returnString;
 }
 
 
-//Takes an article and puppeteer-page, and return array of categories
-function addCategories(articles, page){
-	
-	
-}
 
-
-//receiptString contains full receipt 
-//Returns array of pairs of items and their respective prices
+//Input: Full receipt as string. Output: Array of pairs of items and their respective prices
 function parseArticles(receiptString){
 		
 	//TODO
