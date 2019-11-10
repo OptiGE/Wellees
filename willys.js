@@ -18,7 +18,7 @@ var password = "";
 // PDF-parse
 const fs = require('fs');
 const pdf = require('pdf-parse');
-let dataBuffer = fs.readFileSync('examplereceipts/1.pdf');
+let dataBuffer = fs.readFileSync('examplereceipts/2.pdf');
 
 //Puppeteer
 const puppeteer = require('puppeteer')
@@ -33,12 +33,12 @@ const screenshot = 'instagram.png';
  //---------------------- U S E R    I N P U T -------------------------------------
  //---------------------------------------------------------------------------------
 
-
+/*
 var theprompt = [
 	{
         name: 'Press enter to start',
     },
-    /*{
+    {
         name: 'username',
 		//Regex för att vara på den säkra sidan
         validator: /^[0-9]{10}$/,
@@ -48,7 +48,7 @@ var theprompt = [
     {
         name: 'password',
         hidden: true
-    },*/
+    },
 ];
 
 // Starta prompten för att ta användarinput
@@ -64,7 +64,9 @@ prompt.get(theprompt, function (err, result) {
 		wellees(result.username, result.password);
     }
 });
- 
+*/
+
+wellees("name", "password"); //Ta bort denna när prompten läggs in igen
  
  
  
@@ -77,7 +79,7 @@ function wellees(username, password){
 
 	(async () => {
 		const browser = await puppeteer.launch({
-			headless: true,    
+			headless: false,    
             args: ['--no-sandbox'] //linux-chromium fix
 		});
 
@@ -86,6 +88,8 @@ function wellees(username, password){
 		// - - - - L O G I N - - - - - -
 		
 		const page = await browser.newPage()
+		await page.setViewport({width:1280, height:2200});
+
 /*
 		await page.goto("https://www.willys.se/anvandare/inloggning", {
 			waitUntil: 'networkidle0'
@@ -140,11 +144,11 @@ function wellees(username, password){
 		
 		//Search for and add the articles respective categories and subcategories
 		for (var i = 0; i < articles.length; i++){
+				console.log("New element");
 				console.log("");
-				console.log("0");
 				//Search for item number i
 				await page.goto("https://www.willys.se/sok?q=" + encodeURIComponent(articles[i][0]), {
-					waitUntil: 'networkidle2' //Borde kunna snabbas upp med await page.waitForSelector("gridSelector");
+					waitUntil: 'networkidle2'
 				});						   
 			   
 				//Extract grid of articles
@@ -166,16 +170,21 @@ function wellees(username, password){
 				await page.click(firstArticle);
 
 				//Wait for product page to load and extract categories
-				await page.waitForSelector("#selenium--product-detail-dialog > md-dialog-content > div.md-dialog-content > p > small:nth-child(4) > a");
-				const categories = await page.evaluate(
-				  () => Array.from(
-					document.querySelectorAll('#selenium--product-detail-dialog > md-dialog-content > div.md-dialog-content > p > small:nth-child(4) > a'),
-					a => a.getAttribute('href')
-				  )
-				);
-
-				//Now categories are found. Transform them from urlstring to an array and append it to the proper article
-				articles[i].push(decodeURIComponent(categories).split("/").splice(2)); //Also remove first two elements as they always are "" and "sortiment"
+				await page.waitForSelector("#selenium--product-detail-dialog > md-dialog-content > div.md-dialog-content > p > small:nth-child(2) > a > span"); //Wait for categories to load (all categories have at least 2 levels)
+				const categories = await page.evaluate(() => {
+					let categoryArray = [];
+					let links = document.querySelectorAll("#selenium--product-detail-dialog > md-toolbar > div > div > small > a");
+					console.log("Hejhej");
+					links.forEach(link => {
+						categoryArray.push(link.firstChild.innerText);
+					})
+					return categoryArray;
+				});
+				
+				console.log(categories);
+				
+				//Push category array into main array of the respective articles
+				articles[i].push(categories);
 			
 		}	
 		
@@ -205,7 +214,6 @@ function sankeyLine(entry, value, exit){
 //Input: array of article, price and subcategories. Output: string to paste at sankeymatic.com
 function sankeyGenString(articles){
 	var returnString = "";
-	
 	articles.forEach(function (article){
 		returnString += sankeyLine("Totalt", article[1], "Budget");
 		returnString += sankeyLine("Budget", article[1], article[2][0]);
