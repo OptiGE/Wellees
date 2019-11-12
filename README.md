@@ -5,4 +5,4 @@ Once done, entering your SSN and password should generate a Sankey graph showing
 
 As of now, you can generate images like this with the program, and a little manual labor:
 
-![Image of Yaktocat](https://github.com/OptiGE/Wellees/blob/master/examplereceipts/receipt1.png)
+![Chart from data collected by the program](https://github.com/OptiGE/Wellees/blob/master/examplereceipts/receipt1.png)
