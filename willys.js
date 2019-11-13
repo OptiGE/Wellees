@@ -18,12 +18,19 @@ var password = "";
 // PDF-parse
 const fs = require('fs');
 const pdf = require('pdf-parse');
-let dataBuffer = fs.readFileSync('examplereceipts/2.pdf');
+
+let dataBuffer = fs.readFileSync('examplereceipts/1.pdf');
 
 //Puppeteer
 const puppeteer = require('puppeteer')
 const screenshot = 'instagram.png';
 
+var theprompt = 
+[
+	{name: 'Press enter to start'},
+    {name: 'username', validator: /^[0-9]{10}$/, warning: 'Användarnamnet skall ha formatet ÅÅMMDDXXXX'},
+    {name: 'password', hidden: true},
+];
 
 
 
@@ -34,22 +41,6 @@ const screenshot = 'instagram.png';
  //---------------------------------------------------------------------------------
 
 /*
-var theprompt = [
-	{
-        name: 'Press enter to start',
-    },
-    {
-        name: 'username',
-		//Regex för att vara på den säkra sidan
-        validator: /^[0-9]{10}$/,
-        //Om Regexen inte stämmer
-        warning: 'Användarnamnet skall ha formatet ÅÅMMDDXXXX'
-    },
-    {
-        name: 'password',
-        hidden: true
-    },
-];
 
 // Starta prompten för att ta användarinput
 prompt.start();
@@ -66,6 +57,7 @@ prompt.get(theprompt, function (err, result) {
 });
 */
 
+
 wellees("name", "password"); //Ta bort denna när prompten läggs in igen
  
  
@@ -79,7 +71,7 @@ function wellees(username, password){
 
 	(async () => {
 		const browser = await puppeteer.launch({
-			headless: false,    
+			headless: true,    
             args: ['--no-sandbox'] //linux-chromium fix
 		});
 
@@ -123,19 +115,17 @@ function wellees(username, password){
 		// let dataBuffer = fs.readFileSync('examplereceipts/1.pdf');
 		*/
 		
+		
+		// - - - - - - D O W N L O A D    R E C E I P T S - - - - - - - 
+		
+		//Download them into a folder named 1.pdf - n.pdf 
+		
+		
 		// - - - - - P A R S E    R E C E I P T S - - - - - -
 		
-		var receiptString = ""; 
-		
-		//Read text from receipt pdf
-		await pdf(dataBuffer).then(function(data) {
-			receiptString = data.text;
-			console.log(data.text);
-		});
-		
-		
 		//Parse receipt to list of articles and their prices
-		var articles = await parseArticles(receiptString); //Articles have structure: [[Article, Price], ...] where article and price are strings
+		var articles = await parseAllArticles("examplereceipts"); //Articles have structure: [[Article, Price], ...] where article and price are strings
+		
 		
 		
 		
@@ -161,7 +151,7 @@ function wellees(username, password){
 
 				//Skip if search yielded no results, and add "uncertain" as category of object
 				if(grid == "<!----><!---->"){
-					articles[i].push(["uncertain category"]);
+					articles[i].push(["Osäker kategori"]);
 					continue;
 				}
 
@@ -173,7 +163,7 @@ function wellees(username, password){
 				await page.waitForSelector("#selenium--product-detail-dialog > md-dialog-content > div.md-dialog-content > p > small:nth-child(2) > a > span"); //Wait for categories to load (all categories have at least 2 levels)
 				const categories = await page.evaluate(() => {
 					let categoryArray = [];
-					let links = document.querySelectorAll("#selenium--product-detail-dialog > md-toolbar > div > div > small > a");
+					let links = document.querySelectorAll("#selenium--product-detail-dialog > md-toolbar > div > div > small > a"); //Each subcategory is a separate link
 					console.log("Hejhej");
 					links.forEach(link => {
 						categoryArray.push(link.firstChild.innerText);
@@ -206,27 +196,45 @@ function wellees(username, password){
 // --------------- R E C E I P T   P A R S I N G -------------------------
 // -----------------------------------------------------------------------
 
-//Input: entry, value, exit. Output: Inputs parsed for sankeymatic.com
-function sankeyLine(entry, value, exit){
-	return entry + " [" + value.replace(",", ".") + "] " + exit + "\n";  
-}
-
-//Input: array of article, price and subcategories. Output: string to paste at sankeymatic.com
-function sankeyGenString(articles){
-	var returnString = "";
-	articles.forEach(function (article){
-		returnString += sankeyLine("Totalt", article[1], "Budget");
-		returnString += sankeyLine("Budget", article[1], article[2][0]);
-		for (var i = 0; i < article[2].length - 1; i ++){
-			returnString += sankeyLine(article[2][i], article[1], article[2][i + 1]);
-		}
-		returnString += sankeyLine(article[2].slice(-1)[0], article[1], article[0]); 
-	});
+function parseAllArticles(path){
+		
+	//Read how many pdf:s are in the receipts folder
+	files = fs.readdirSync(path);
+	pdfs = files.filter(file => file.split(".")[1] == "pdf");
 	
-	return returnString;
+	console.log("Files found: " + pdfs);
+	
+	var allArticles = [];
+	
+	
+	
+	
+	
+	
+	
+	
+	//FORTSÄTT NEDAN! DET DAMPAR FÖR ATT DET ÄR ASYNC!
+	//"UTE UR LOOPEN" PRINTAS INNAN ALLT DET SOM ÄR INNE I LOOPEN
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	for(var i = 0; i < pdfs.length; i++){
+		pdf(fs.readFileSync(path + "/" + (i+1) + ".pdf")).then(function(data) {
+			console.log(parseArticles(data.text));
+			console.log("");
+		});
+	}
+	
+	console.log("Ute ur loopen");
+	
+	return allArticles;
 }
-
-
 
 //Input: Full receipt as string. Output: Array of pairs of items and their respective prices
 function parseArticles(receiptString){
@@ -267,4 +275,30 @@ function parseArticles(receiptString){
 	
 	return articlePricePairs;
 	
+}
+
+
+
+// --------------------------------------------------------------------------
+// --------------- G R A P H    G E N E R A T I N G -------------------------
+// --------------------------------------------------------------------------
+
+
+//Input: entry, value, exit. Output: Inputs parsed for sankeymatic.com
+function sankeyLine(entry, value, exit){
+	return entry + " [" + value.replace(",", ".") + "] " + exit + "\n";  
+}
+
+//Input: array of article, price and subcategories. Output: string to paste at sankeymatic.com
+function sankeyGenString(articles){
+	var returnString = "";
+	articles.forEach(function (article){
+		returnString += sankeyLine("Totalt", article[1], article[2][0]);
+		for (var i = 0; i < article[2].length - 1; i ++){
+			returnString += sankeyLine(article[2][i], article[1], article[2][i + 1]);
+		}
+		returnString += sankeyLine(article[2].slice(-1)[0], article[1], article[0]); 
+	});
+	
+	return returnString;
 }
