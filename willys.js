@@ -125,8 +125,7 @@ function wellees(username, password){
 		
 		//Parse receipt to list of articles and their prices
 		var articles = await parseAllArticles("examplereceipts"); //Articles have structure: [[Article, Price], ...] where article and price are strings
-		
-		
+		console.log(articles);
 		
 		
 		
@@ -196,47 +195,36 @@ function wellees(username, password){
 // --------------- R E C E I P T   P A R S I N G -------------------------
 // -----------------------------------------------------------------------
 
-function parseAllArticles(path){
+async function parseAllArticles(path){
 		
 	//Read how many pdf:s are in the receipts folder
 	files = fs.readdirSync(path);
+	//Save a list of those pdfs
 	pdfs = files.filter(file => file.split(".")[1] == "pdf");
-	
 	console.log("Files found: " + pdfs);
 	
 	var allArticles = [];
-	
-	
-	
-	
-	
-	
-	
-	
-	//FORTSÄTT NEDAN! DET DAMPAR FÖR ATT DET ÄR ASYNC!
-	//"UTE UR LOOPEN" PRINTAS INNAN ALLT DET SOM ÄR INNE I LOOPEN
-	
-	
-	
-	
-	
-	
-	
-	
-	
+
+	//Loop through pdfs
 	for(var i = 0; i < pdfs.length; i++){
-		pdf(fs.readFileSync(path + "/" + (i+1) + ".pdf")).then(function(data) {
-			console.log(parseArticles(data.text));
-			console.log("");
-		});
+		
+		//Read file
+		let dataBuffer = fs.readFileSync(path + "/" + ("1") + ".pdf");
+		
+		//Parse file from pdf to text
+		let data = await pdf(dataBuffer);
+		
+		//Add articles
+		articles = parseArticles(data.text);
+		
+		allArticles = allArticles.concat(articles);
+		
 	}
-	
-	console.log("Ute ur loopen");
-	
 	return allArticles;
 }
 
-//Input: Full receipt as string. Output: Array of pairs of items and their respective prices
+
+
 function parseArticles(receiptString){
 		
 	//TODO
