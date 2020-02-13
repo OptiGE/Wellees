@@ -124,7 +124,7 @@ function wellees(username, password){
 		// - - - - - P A R S E    R E C E I P T S - - - - - -
 		
 		//Parse receipt to list of articles and their prices
-		var articles = await parseAllArticles("examplereceipts"); //Articles have structure: [[Article, Price], ...] where article and price are strings
+		var articles = await parseAllReceipts("examplereceipts"); //Articles have structure: [[Article, Price], ...] where article and price are strings
 		console.log(articles);
 		
 		
@@ -195,7 +195,7 @@ function wellees(username, password){
 // --------------- R E C E I P T   P A R S I N G -------------------------
 // -----------------------------------------------------------------------
 
-async function parseAllArticles(path){
+async function parseAllReceipts(path){
 		
 	//Read how many pdf:s are in the receipts folder
 	files = fs.readdirSync(path);
@@ -206,10 +206,10 @@ async function parseAllArticles(path){
 	var allArticles = [];
 
 	//Loop through pdfs
-	for(var i = 0; i < pdfs.length; i++){
+	for(var i = 1; i <= pdfs.length; i++){
 		
 		//Read file
-		let dataBuffer = fs.readFileSync(path + "/" + ("1") + ".pdf");
+		let dataBuffer = fs.readFileSync(path + "/" + (i) + ".pdf");
 		
 		//Parse file from pdf to text
 		let data = await pdf(dataBuffer);
@@ -220,9 +220,8 @@ async function parseAllArticles(path){
 		allArticles = allArticles.concat(articles);
 		
 	}
-	return allArticles;
+	return compressArticles(allArticles);
 }
-
 
 
 function parseArticles(receiptString){
@@ -232,21 +231,25 @@ function parseArticles(receiptString){
 	//Parse Extrapris (3.pdf)
 	//Parse Kilopriser
 	
+	var allItems = {};
 	var articlePricePairs = [];
 	
-	receiptLines = receiptString.split("\n");
+	var receiptLines = receiptString.split("\n");
 	
 	//Iterate through each line, starting with the dashed line
 	var start = receiptLines.indexOf("------------------------------------------") + 1;
 	for (var i = start; i < receiptLines.length; i++){
 		
 		//Guards
-		if (receiptLines[i].charAt(0) == " ") {continue;} //If sale info line
-		if (receiptLines[i] == "------------------------------------------") {break;} //If ending line
+		if (lineType(receiptLines[i], "") == "Unhandled"){continue;}
+		if (lineType(receiptLines[i], "") == "End"){break;}
 		
-		words = receiptLines[i].split(" ");
+		console.log("#" + receiptLines[i] + "#");
+		
+		var words = receiptLines[i].split(" ");
 		
 		var pair = ["", ""];
+		
 		//Pick out all words from left to right
 		while (words[0] != ""){
 			pair[0] += words.shift() + " ";
@@ -256,15 +259,68 @@ function parseArticles(receiptString){
 		
 		//Add the price (furthest to the right on each line)
 		pair[1] = words.pop();
+		pair[1] = pair[1].replace(",", "."); //Because jänkare use dots instead of commas to separate decimals
 		
-		//Push pair to the main array
+		
+		//Add item to allItems and add price
 		articlePricePairs.push(pair)
+		
+		console.log(pair);
 	}
 	
 	return articlePricePairs;
 	
 }
 
+function lineType (line, nextLine){ //NextLine ifall man vill kolla rabatter i framtiden. Skall isf alltid skickas med
+
+	/*
+		Saker som inte räknas med just nu:
+		*Rabatter
+		*Något som är köpt i på kilopris (ofta typ ost)
+	*/
+
+	//Currently unhandled
+	if (line == "Extrapris") {return "Unhandled";} //Special case
+	if (line.charAt(0) == " ") {return "Unhandled";} //If sale info line
+	if (line.length != 42) {return "Unhandled";} //All standard lines are length 42
+	
+	//Ending line
+	if (line == "------------------------------------------") {return "End"} //If ending line
+	
+	return "OK";
+
+}
+
+function compressArticles(articlePairArray){
+	
+	var allItems = {};
+	
+	//Take each article out of the array and put it in an object
+	articlePairArray.forEach(pair => {	
+	
+		//If item has been added before, just add to its price
+		if (pair[0] in allItems){
+			allItems[pair[0]] += +pair[1];
+			
+		//Otherwise, add it for first time
+		}else{
+			allItems[pair[0]] = +pair[1];
+		}
+		
+	});
+	
+	//Now unpack that object back into an array and return it
+	
+	var articlePricePairs = [];
+	//for (let [item, price] of Object.entries(allItems))
+	for (let pair of Object.entries(allItems)) {
+		//Add item to allItems and add price
+		articlePricePairs.push(pair)
+	}
+	
+	return articlePricePairs;
+}
 
 
 // --------------------------------------------------------------------------
